@@ -1,10 +1,11 @@
 from types import MappingProxyType  # неизменяемый словарь
 
 import numpy as np
-from numpy import array, full, nan, isnan, inf, pi, sqrt, arange, linspace
 import pandas as pd
+from numpy import array, full, nan, isnan, inf, pi, sqrt, arange, linspace
 from scipy import interpolate, integrate
-import matplotlib as mpl, matplotlib.pyplot as plt
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 from material import Material
 
@@ -104,7 +105,7 @@ class Disk:
         return x, y
 
     @staticmethod
-    def equivalent_energy_tension(sigma_t: float | int, sigma_r: float | int) -> float:
+    def equivalent_energy_tension(sigma_t: float | int | np.number, sigma_r: float | int | np.number) -> float:
         """Эквивалентное напряжение по энергетической теории"""
         sigma1, sigma3 = max(sigma_t, sigma_r), min(sigma_t, sigma_r)
         return sqrt(sigma1 ** 2 - sigma1 * sigma3 + sigma3 ** 2)
@@ -436,7 +437,7 @@ class Disk:
 
     def campbell_diagram(self, radius: int | np.integer, N: int | np.integer, S: int | np.integer,
                          max_rotation_frequency: int | float | np.number,
-                         k=arange(1, 11, 1), **kwargs) -> tuple[list[float], str]:
+                         k: tuple | list | np.ndarray = arange(1, 11, 1), **kwargs) -> tuple[list[float], str]:
         """Диаграмма Кэмпбелла [6]"""
         assert isinstance(max_rotation_frequency, (int, float, np.number))
         assert isinstance(k, (list, tuple, np.ndarray))
