@@ -217,24 +217,17 @@ class Disk:
         sigma_t = calc1['tension_t'] + k * calc2['tension_t']
         sigma_r = calc1['tension_r'] + k * calc2['tension_r']
 
-        sigma_t = np.array([sigma_t[0][0]] +
-                           [(sigma_t[i][1] + sigma_t[i + 1][0]) / 2 for i in range(0, len(radius) - 2)] +
-                           [sigma_t[-1][-1]])
-        sigma_r = np.array([sigma_r[0][0]] +
-                           [(sigma_r[i][1] + sigma_r[i + 1][0]) / 2 for i in range(0, len(radius) - 2)] +
-                           [sigma_r[-1][-1]])
+        sigma_t = array([sigma_t[0][0]] +
+                        [(sigma_t[i][1] + sigma_t[i + 1][0]) / 2 for i in range(0, len(radius) - 2)] +
+                        [sigma_t[-1][-1]])
+        sigma_r = array([sigma_r[0][0]] +
+                        [(sigma_r[i][1] + sigma_r[i + 1][0]) / 2 for i in range(0, len(radius) - 2)] +
+                        [sigma_r[-1][-1]])
 
-        sigma = np.array([self.equivalent_energy_tension(sigma_t[i], sigma_r[i]) for i in range(len(radius))])
+        sigma = array([self.equivalent_energy_tension(sigma_t[i], sigma_r[i]) for i in range(len(radius))])
 
         result = {'radius': radius, 'thickness': thickness,
                   'tension': sigma, 'tension_t': sigma_t, 'tension_r': sigma_r}
-
-        df = pd.DataFrame({'radius [mm]': result['radius'] * 1_000,
-                           'thickness [mm]': result['thickness'] * 1_000,
-                           'tension [MPa]': result['tension'] / 10 ** 6,
-                           'tension_t': result['tension_t'] / 10 ** 6,
-                           'tension_r': result['tension_r'] / 10 ** 6}).sort_values(by='radius [mm]', ascending=False)
-        print(df)
 
         if show: self.show_tension(rotation_frequency, temperature0, result)
 
