@@ -6,5 +6,5 @@ scipy
 matplotlib
 pandas
 
-git+https://github.com/ParkhomenkoDV/decorators.git@master
-git+https://github.com/ParkhomenkoDV/material.git@master
+decorators @ git+https://github.com/ParkhomenkoDV/decorators.git@master
+material @ git+https://github.com/ParkhomenkoDV/material.git@master
