@@ -1,6 +1,5 @@
 tqdm 
 colorama
-
 numpy
 scipy
 matplotlib
