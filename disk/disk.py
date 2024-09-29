@@ -2,7 +2,7 @@ from types import MappingProxyType  # неизменяемый словарь
 
 import numpy as np
 import pandas as pd
-from numpy import array, full, nan, isnan, inf, pi, sqrt, arange, linspace
+from numpy import array, full, zeros, nan, isnan, inf, pi, sqrt, arange, linspace
 from scipy import interpolate, integrate
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -26,6 +26,7 @@ REFERENCES = MappingProxyType({
 
 
 class Disk:
+    __slots__ = ['material', 'radius', 'thickness', 'nholes', 'rholes', 'dholes', 'b']
 
     @classmethod
     @property
@@ -198,18 +199,18 @@ class Disk:
             radius = np.concatenate((radius, r))
             thickness = np.concatenate((thickness, th))
 
-        average_radius = np.array([(radius[i] + radius[i + 1]) / 2 for i in range(len(radius) - 1)])
+        average_radius = array([(radius[i] + radius[i + 1]) / 2 for i in range(len(radius) - 1)])
         avarege_temperature = [func_temperature(av_r) for av_r in average_radius]
-        avarege_density = np.array([self.material.density(av_t) for av_t in avarege_temperature])
-        avarege_E = np.array([self.material.E(av_t) for av_t in avarege_temperature])
-        avarege_mu = np.array([self.material.mu(av_t) for av_t in avarege_temperature])
-        tetta = np.array([func_tetta(r) for r in radius])
+        avarege_density = array([self.material.density(av_t) for av_t in avarege_temperature])
+        avarege_E = array([self.material.E(av_t) for av_t in avarege_temperature])
+        avarege_mu = array([self.material.mu(av_t) for av_t in avarege_temperature])
+        tetta = array([func_tetta(r) for r in radius])
 
         calc1 = self.calculation2(rotation_frequency, pressure,
                                   radius, thickness, tetta,
                                   avarege_density, avarege_E, avarege_mu)
         calc2 = self.calculation2(0, pressure,
-                                  radius, thickness, np.zeros(len(radius)),
+                                  radius, thickness, zeros(len(radius)),
                                   avarege_density, avarege_E, avarege_mu)
 
         k = (pressure[-1] - calc1['tension_r'][-1][-1]) / calc2['tension_r'][-1][-1]  # коэффициент Мора
@@ -229,19 +230,7 @@ class Disk:
         result = {'radius': radius, 'thickness': thickness,
                   'tension': sigma, 'tension_t': sigma_t, 'tension_r': sigma_r}
 
-        if show: self.show_tension(rotation_frequency, temperature0, result)
-
-        f_sigma_t = interpolate.interp1d(result['radius'], result['tension_t'], kind='linear')
-        f_sigma_r = interpolate.interp1d(result['radius'], result['tension_r'], kind='linear')
-
-        for i in range(len(self.nholes)):
-            local_tension = self.local_tension(self.nholes[i], self.dholes[i], self.rholes[i],
-                                               f_sigma_t(self.rholes[i]), f_sigma_r(self.rholes[i]))
-            print(f'''
-            holes: {i}
-            nholes []: {self.nholes[i]}, rholes [mm]: {self.rholes[i] * 1_000}, dholes [mm]: {self.dholes[i] * 1_000}
-            tension_t [MPa] in {local_tension}
-            ''')
+        if show: self.__show_tension(rotation_frequency, temperature0, result)
 
         return result
 
@@ -250,10 +239,10 @@ class Disk:
         """Местное напряжение от отверстия"""
         b = 2 * np.pi * radius / n - diameter  # расчет расстояния между краями отверстий по окружности
         k = 3 - diameter / b - sigma_r / sigma_t
-        sigma_t_hole = k * sigma_t
+        sigma_t_hole = float(k * sigma_t)
         return sigma_t_hole * 1.1, sigma_t_hole * 1.15
 
-    def show_tension(self, rotation_frequency: float, temperature0: int | float, tensions: dict, **kwargs) -> None:
+    def __show_tension(self, rotation_frequency: float, temperature0: int | float, tensions: dict, **kwargs) -> None:
 
         radius, thickness = tensions.get('radius') * 1_000, tensions.get('thickness') * 1_000  # приведение к [мм]
         for key in tensions:
@@ -387,23 +376,23 @@ class Disk:
         func_temperature = lambda r: temperature
         func_thickness = interpolate.interp1d(self.radius, self.thickness, kind='linear')
 
-        safety = integrate.quad(lambda r: self.material.sigma_temp(func_temperature(r)) * func_thickness(r),
+        safety = integrate.quad(lambda r: self.material.sigma_s(func_temperature(r)) * func_thickness(r),
                                 self.radius[0], self.radius[-1], points=self.radius)[0]
 
         for n, r, d in zip(self.nholes, self.rholes, self.dholes):
-            safety += (self.material.sigma_temp(func_temperature(r)) * r * func_thickness(r) *
+            safety += (self.material.sigma_s(func_temperature(r)) * r * func_thickness(r) *
                        (1 - (n * d) / (2 * pi * r)))
         safety /= (pressure[-1] * self.radius[-1] * self.thickness[-1] +
                    (rotation_frequency ** 2 *
                     integrate.quad(lambda r: self.material.density(func_temperature(r)) * func_thickness(r) * r ** 2,
                                    self.radius[0], self.radius[-1], points=self.radius)[0]))
-        safety = np.sqrt(safety)
+        safety = float(sqrt(safety))
         return (safety * 0.9, safety * 0.95), ''  # действительный интервал запаса разрушающей частоты
 
     def natural_frequencies(self, radius: int | np.integer, N: int, S: int) -> tuple[float, str]:
         """Частота собственных колебаний [6]"""
 
-        def alpha(radius: int, N: int, S: int) -> float:
+        def alpha(radius: int, N: int, S: int) -> tuple[float, str]:
             """
             radius = тип крепления (0 = центральное, -1 = периферийное)
             N = число узловых диаметров
@@ -426,15 +415,17 @@ class Disk:
         f = self.material.E(5) * np.mean(self.thickness) ** 2
         f /= 12 * (1 - self.material.mu(0) ** 2) * self.material.density(0)
         f = sqrt(f) * alpha(radius, N, S) / (2 * pi * self.radius[-1] ** 2)
-        return f, '1/s'
+        return float(f), '1/s'
 
     def campbell_diagram(self, radius: int | np.integer, N: int | np.integer, S: int | np.integer,
                          max_rotation_frequency: int | float | np.number,
-                         k: tuple | list | np.ndarray = arange(1, 11, 1), **kwargs) -> tuple[list[float], str]:
+                         multiplicity: tuple | list | np.ndarray = arange(1, 11, 1),
+                         **kwargs) -> tuple[list[float], str]:
         """Диаграмма Кэмпбелла [6]"""
         assert isinstance(max_rotation_frequency, (int, float, np.number))
-        assert isinstance(k, (list, tuple, np.ndarray))
-        assert all(map(lambda i: isinstance(i, (int, np.integer)), k))
+        assert isinstance(multiplicity, (list, tuple, np.ndarray))
+        assert all(map(lambda i: isinstance(i, (int, np.integer)), multiplicity))
+        assert all(map(lambda i: i >= 0, multiplicity))
 
         def B(radius: int, N: int, S: int):
             """
@@ -458,26 +449,26 @@ class Disk:
 
         plt.figure(figsize=kwargs.pop('figsize', (8, 8)))
         plt.title(kwargs.pop('title', 'Campbell diagram'), fontsize=14, fontweight='bold')
-        for k_ in k:
-            plt.plot([0, rotation_frequency[-1]], [0, rotation_frequency[-1] * k_],
+        for k in multiplicity:
+            plt.plot([0, rotation_frequency[-1]], [0, rotation_frequency[-1] * k],
                      color='orange', linestyle='solid', linewidth=1)
-            plt.text(rotation_frequency[-1], rotation_frequency[-1] * k_, f'k{k_}',
+            plt.text(rotation_frequency[-1], rotation_frequency[-1] * k, f'k{k}',
                      fontsize=12, ha='left', va='center')
-            if k_ ** 2 - B(radius, N, S) >= 0:
-                x0 = f[0] / sqrt(k_ ** 2 - B(radius, N, S))  # f
+            if k ** 2 - B(radius, N, S) >= 0:
+                x0 = f[0] / sqrt(k ** 2 - B(radius, N, S))  # f
                 if not isnan(x0) and x0 <= rotation_frequency[-1]:
                     resonance.add(round(x0, 6))
-                    plt.scatter(x0, k_ * x0, color='red')
-            if k_ ** 2 - B(radius, N, S) + N ** 2 + 2 * k_ * N >= 0:
-                x0 = f[0] / sqrt(k_ ** 2 - B(radius, N, S) + N ** 2 + 2 * k_ * N)  # f_minus
+                    plt.scatter(x0, k * x0, color='red')
+            if k ** 2 - B(radius, N, S) + N ** 2 + 2 * k * N >= 0:
+                x0 = f[0] / sqrt(k ** 2 - B(radius, N, S) + N ** 2 + 2 * k * N)  # f_minus
                 if not isnan(x0) and x0 <= rotation_frequency[-1]:
                     resonance.add(round(x0, 6))
-                    plt.scatter(x0, k_ * x0, color='red')
-            if k_ ** 2 - B(radius, N, S) + N ** 2 - 2 * k_ * N >= 0:
-                x0 = f[0] / sqrt(k_ ** 2 - B(radius, N, S) + N ** 2 - 2 * k_ * N)  # f_plus
+                    plt.scatter(x0, k * x0, color='red')
+            if k ** 2 - B(radius, N, S) + N ** 2 - 2 * k * N >= 0:
+                x0 = f[0] / sqrt(k ** 2 - B(radius, N, S) + N ** 2 - 2 * k * N)  # f_plus
                 if not isnan(x0) and x0 <= rotation_frequency[-1]:
                     resonance.add(round(x0, 6))
-                    plt.scatter(x0, k_ * x0, color='red')
+                    plt.scatter(x0, k * x0, color='red')
         plt.plot(rotation_frequency, f, color='black', linestyle='solid', linewidth=2, label='f')
         plt.plot(rotation_frequency, f_plus, color='green', linestyle='solid', linewidth=1.5, label='f+')
         plt.plot(rotation_frequency, f_minus, color='blue', linestyle='solid', linewidth=1.5, label='f-')
@@ -487,7 +478,7 @@ class Disk:
         plt.legend(fontsize=12)
         plt.show()
 
-        return sorted(list(resonance), reverse=False), '1/s'
+        return sorted(list(map(float, resonance)), reverse=False), '1/s'
 
 
 def test() -> None:
@@ -503,17 +494,15 @@ def test() -> None:
                                 "alpha": 18 * 10 ** -6,
                                 "E": interpolate.interp1d(arange(400, 800 + 1, 100),
                                                           array([1.74, 1.66, 1.57, 1.47, 1.32]) * 10 ** 11,
-                                                          kind='cubic', bounds_error=False, fill_value='extrapolate'),
+                                                          kind=3, bounds_error=False, fill_value='extrapolate'),
                                 "mu": interpolate.interp1d(arange(400, 800 + 1, 100),
                                                            [0.384, 0.379, 0.371, 0.361, 0.347],
-                                                           kind='cubic', bounds_error=False, fill_value='extrapolate'),
-                                "sigma_temp": 900 * 10 ** 6
+                                                           kind=3, bounds_error=False, fill_value='extrapolate'),
+                                "sigma_s": 900 * 10 ** 6
                             })
         radius = array([20, 26, 30.62, 37.26, 56.94, 60.67, 72.95, 75.95, 102.41, 106.52, 109.82]) / 1000
         thickness = array([36, 36, 15.43, 11.27, 10, 12, 12, 8, 6, 11, 11]) / 1000
         nholes, rholes, dholes = [5], [66.8 / 1000], [6.2 / 1000]
-
-        print(pd.DataFrame({'radius': radius, 'thickness': thickness}))
 
         rotation_frequency = 2806.2
         temperature0 = 293.15
@@ -533,7 +522,7 @@ def test() -> None:
                                 "alpha": 20 * 10 ** -6,
                                 "E": 1.3 * 10 ** 11,
                                 "mu": 0.33,
-                                "sigma_temp": 600 * 10 ** 6
+                                "sigma_s": 600 * 10 ** 6
                             })
         radius = array(
             [0, 272, 434, 506.5, 509, 584, 619, 621.5, 726, 737, 748, 763, 775, 860, 864, 868, 880, 884, 887,
@@ -541,8 +530,6 @@ def test() -> None:
         thickness = array(
             [132, 132, 83, 88.5, 154, 154, 88.5, 83, 90, 107, 122, 96, 83, 89, 96, 127, 96, 89, 83, 83]) / 1000
         nholes, rholes, dholes = [10], [544 / 1000], [40 / 1000]
-
-        print(pd.DataFrame({'radius': radius, 'thickness': thickness}))
 
         rotation_frequency = 3000 * 2 * pi / 60
         temperature0 = 620
@@ -562,7 +549,7 @@ def test() -> None:
                                 "alpha": 18 * 10 ** -6,
                                 "E": 1.6 * 10 ** 11,
                                 "mu": 0.33,
-                                "sigma_temp": 900 * 10 ** 6
+                                "sigma_s": 900 * 10 ** 6
                             })
         radius = array(
             [84.0, 95.1, 107.7, 120.2, 132.8, 145.4, 157.9, 170.6, 176.6, 189.2, 203.1, 218.9, 233.3, 245.9, 258.4,
@@ -570,8 +557,6 @@ def test() -> None:
         thickness = array(
             [83, 83, 91, 69, 64, 58, 58, 58, 48, 43, 39, 35.8, 31, 27.8, 29.6, 35.6, 40, 50, 62, 62]) / 1000
         nholes, rholes, dholes = [], [], []
-
-        print(pd.DataFrame({'radius': radius, 'thickness': thickness}))
 
         rotation_frequency = 9150 * 2 * pi / 60
         temperature0 = 300
@@ -585,15 +570,25 @@ def test() -> None:
                                pressure=pressure, temperature=temperature))
 
     for disk, condition in zip(disks, conditions):
+        print(pd.DataFrame({'radius': disk.radius, 'thickness': disk.thickness}))
         disk.show()
+
         tensions = disk.tension(**condition, ndis=10, show=True)
+        f_sigma_t = interpolate.interp1d(tensions['radius'], tensions['tension_t'], kind=1)
+        f_sigma_r = interpolate.interp1d(tensions['radius'], tensions['tension_r'], kind=1)
+        for i in range(len(disk.nholes)):
+            local_tension = disk.local_tension(disk.nholes[i], disk.dholes[i], disk.rholes[i],
+                                               f_sigma_t(disk.rholes[i]), f_sigma_r(disk.rholes[i]))
+            print(f'holes: {i}, nholes []: {disk.nholes[i]}, rholes: {disk.rholes[i]}, dholes: {disk.dholes[i]}')
+            print(f'tension_t in {local_tension}')
+
         eq_radius, eq_thickness = disk.equal_strength(400 * 10 ** 6, condition["rotation_frequency"],
                                                       ndis=10, show=False).values()
         Disk(material=disk.material, radius=eq_radius, thickness=eq_thickness).tension(**condition, ndis=10, show=True)
         print(f'frequency_safety_factor: '
               f'{disk.frequency_safety_factor(condition["rotation_frequency"], temperature=600, pressure=pressure)}')
         print(f'natural_frequencies: {disk.natural_frequencies(-1, 0, 0)}')
-        print(disk.campbell_diagram(0, 1, 1, condition["rotation_frequency"] * 1.1, k=np.arange(1, 11, 1)))
+        print(disk.campbell_diagram(0, 1, 1, condition["rotation_frequency"] * 1.1, multiplicity=np.arange(1, 11, 1)))
 
 
 if __name__ == "__main__":
