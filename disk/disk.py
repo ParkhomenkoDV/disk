@@ -480,8 +480,6 @@ class Disk:
 
 def test() -> None:
     """Тестирование"""
-    print(Disk.__version__)
-
     disks, conditions = list(), list()
 
     if 1:
@@ -581,11 +579,12 @@ def test() -> None:
 
         eq_radius, eq_thickness = disk.equal_strength(400 * 10 ** 6, condition["rotation_frequency"],
                                                       ndis=10, show=False).values()
-        Disk(material=disk.material, radius=eq_radius, thickness=eq_thickness).tension(**condition, ndis=10, show=True)
+        eq_tensions = Disk(material=disk.material, radius=eq_radius, thickness=eq_thickness).tension(**condition, ndis=10, show=True)
         print(f'frequency_safety_factor: '
               f'{disk.frequency_safety_factor(condition["rotation_frequency"], temperature=600, pressure=pressure)}')
         print(f'natural_frequencies: {disk.natural_frequencies(-1, 0, 0)}')
-        print(disk.campbell_diagram(0, 1, 1, condition["rotation_frequency"] * 1.1, multiplicity=np.arange(1, 11, 1)))
+        resonance = disk.campbell_diagram(0, 1, 1, condition["rotation_frequency"] * 1.1, multiplicity=np.arange(1, 11, 1))
+        print(resonance)
 
 
 if __name__ == "__main__":
