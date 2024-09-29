@@ -26,7 +26,8 @@ REFERENCES = MappingProxyType({
 
 
 class Disk:
-    __slots__ = ['material', 'radius', 'thickness', 'nholes', 'rholes', 'dholes', 'b']
+    __slots__ = ('__material', '__radius', '__thickness',
+                 '__nholes', '__rholes', '__dholes', '__circumferential_distance')
 
     @classmethod
     def help(cls):
@@ -82,12 +83,43 @@ class Disk:
         # проверка на адекватность rholes по отношению к radius
         assert all(map(lambda i: radius[0] <= i <= radius[-1], rholes))
         # расчет и проверка расстояния между краями отверстий по окружности
-        self.b = array([2 * np.pi * rholes[i] / nholes[i] - dholes[i] for i in range(len(nholes))])
-        assert all(map(lambda i: i > 0, self.b))
+        self.__circumferential_distance = array([2 * pi * rholes[i] / n - dholes[i] for i, n in enumerate(nholes)])
+        assert all(map(lambda i: i > 0, self.__circumferential_distance))
 
-        self.radius, self.thickness = array(radius), array(thickness)
-        self.material = material
-        self.nholes, self.rholes, self.dholes = array(nholes), array(rholes), array(dholes)
+        self.__material = material
+        self.__radius, self.__thickness = array(radius), array(thickness)
+        self.__nholes, self.__rholes, self.__dholes = array(nholes), array(rholes), array(dholes)
+
+    def __setattr__(self, key, value):
+        """Запрет на изменение атрибутов"""
+        if key.startswith('_'):
+            super().__setattr__(key, value)
+        else:
+            raise Exception('Changing attributes is prohibited!')
+
+    @property
+    def material(self) -> Material:
+        return self.__material
+
+    @property
+    def radius(self):
+        return self.__radius
+
+    @property
+    def thickness(self):
+        return self.__thickness
+
+    @property
+    def nholes(self):
+        return self.__nholes
+
+    @property
+    def rholes(self):
+        return self.__rholes
+
+    @property
+    def dholes(self):
+        return self.__dholes
 
     @staticmethod
     def slicing(point0: tuple, point1: tuple, ndis: int | np.integer) -> tuple[float, float]:
@@ -579,11 +611,13 @@ def test() -> None:
 
         eq_radius, eq_thickness = disk.equal_strength(400 * 10 ** 6, condition["rotation_frequency"],
                                                       ndis=10, show=False).values()
-        eq_tensions = Disk(material=disk.material, radius=eq_radius, thickness=eq_thickness).tension(**condition, ndis=10, show=True)
+        eq_tensions = Disk(material=disk.material, radius=eq_radius, thickness=eq_thickness).tension(**condition,
+                                                                                                     ndis=10, show=True)
         print(f'frequency_safety_factor: '
               f'{disk.frequency_safety_factor(condition["rotation_frequency"], temperature=600, pressure=pressure)}')
         print(f'natural_frequencies: {disk.natural_frequencies(-1, 0, 0)}')
-        resonance = disk.campbell_diagram(0, 1, 1, condition["rotation_frequency"] * 1.1, multiplicity=np.arange(1, 11, 1))
+        resonance = disk.campbell_diagram(0, 1, 1, condition["rotation_frequency"] * 1.1,
+                                          multiplicity=np.arange(1, 11, 1))
         print(resonance)
 
 
