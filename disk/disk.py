@@ -29,11 +29,8 @@ class Disk:
     __slots__ = ['material', 'radius', 'thickness', 'nholes', 'rholes', 'dholes', 'b']
 
     @classmethod
-    @property
-    def __version__(cls):
-        version = '5.0'
+    def help(cls):
         print('Подбор толщин и радиусов для напряжения')
-        return version
 
     def __init__(self, material: Material,
                  radius: tuple | list | np.ndarray, thickness: tuple | list | np.ndarray,
