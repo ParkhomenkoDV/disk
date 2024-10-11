@@ -342,6 +342,7 @@ class Disk:
         plt.xlabel("Tension [MPa]", fontsize=12)
         plt.ylabel("Radius [mm]", fontsize=12)
 
+        plt.tight_layout()
         plt.show()
 
     def show(self, **kwargs) -> None:
@@ -371,7 +372,7 @@ class Disk:
         plt.axis('equal')
         plt.xlabel("Thickness [mm]", fontsize=12)
         plt.ylabel("Radius [mm]", fontsize=12)
-
+        plt.tight_layout()
         plt.show()
 
     def equal_strength(self, tension: int | float | np.number,
@@ -516,6 +517,7 @@ class Disk:
         plt.ylabel(kwargs.pop('ylabel', 'Frequency [1/s]'), fontsize=12)
         plt.grid(kwargs.pop('grid', True))
         plt.legend(fontsize=12)
+        plt.tight_layout()
         plt.show()
 
         return sorted(list(map(float, resonance)), reverse=False), '1/s'
@@ -620,7 +622,9 @@ def test() -> None:
             print(f'holes: {i}, nholes []: {disk.nholes[i]}, rholes: {disk.rholes[i]}, dholes: {disk.dholes[i]}')
             print(f'tension_t in {local_tension}')
 
-        equal_strength = disk.equal_strength(400 * 10 ** 6, condition["rotation_frequency"], 700, ndis=10, show=False)
+        equal_strength = disk.equal_strength(400 * 10 ** 6,
+                                             condition["rotation_frequency"], max(condition['temperature']),
+                                             ndis=10, show=False)
         radius_equal_strength = linspace(0, disk.radius[-1], 10, endpoint=True)
         thickness_equal_strength = equal_strength(radius_equal_strength)
         disk_equal_strength = Disk(material=disk.material,
@@ -630,9 +634,14 @@ def test() -> None:
                                     pressure=(0, 0), temperature=(700, 700),
                                     ndis=10, show=True)
         disk_equal_strength.tension(**condition, ndis=10, show=True)
+
         print(f'frequency_safety_factor: '
               f'{disk.frequency_safety_factor(condition["rotation_frequency"], temperature=600, pressure=pressure)}')
-        print(f'natural_frequencies: {disk.natural_frequencies(-1, 0, 0)}')
+        for name, fastening in zip(('РК', 'НА'), (0, -1)):
+            print(f'{name}: {fastening = }')
+            for d in range(0, 3 + 1, 1):  # число узловых диаметров
+                for c in range(0, 3 + 1, 1):  # число узловых окружностей
+                    print('\t' + f'{d = } {c = } {disk.natural_frequencies(fastening, d, c)}')
         resonance = disk.campbell_diagram(0, 1, 1, condition["rotation_frequency"] * 1.1,
                                           multiplicity=arange(1, 11, 1))
         print(resonance)
