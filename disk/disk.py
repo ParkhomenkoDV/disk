@@ -374,24 +374,35 @@ class Disk:
 
         plt.show()
 
-    def equal_strength(self, tension: int | float | np.number, rotation_frequency: int | float | np.number,
-                       ndis: int = 100, show: bool = True) -> dict[str:np.ndarray]:
-        """Профилирование равнопрочного диска без центрального отверстия [7]"""
+    def equal_strength(self, tension: int | float | np.number,
+                       rotation_frequency: int | float | np.number, temperature: int | float | np.number,
+                       radius: int | float | np.number = None, thickness: int | float | np.number = None,
+                       ndis: int = 100, show: bool = True, **kwargs):
+        """
+        Профилирование сплошного, равнопрочного, равномерно нагретого диска без центрального отверстия,
+        нагруженного только силами инерции [7]
+        """
         assert isinstance(tension, (int, float, np.number))
         assert isinstance(rotation_frequency, (int, float, np.number))
+        assert isinstance(temperature, (int, float, np.number)) and 0 < temperature
+        assert (isinstance(radius, (int, float, np.number)) and 0 <= radius) or radius is None
+        assert (isinstance(thickness, (int, float, np.number)) and 0 < thickness) or thickness is None
         assert isinstance(ndis, (int, np.integer))
         assert isinstance(show, bool)
 
-        radius = linspace(0, self.radius[-1], ndis)
-        thickness = 0.5 * self.material.density(0) * rotation_frequency ** 2
-        thickness *= (radius[-1] ** 2 - radius ** 2) / tension
-        thickness = self.thickness[-1] * np.exp(thickness)
+        if radius is None: radius = self.radius[-1]  # если не указан конкретный радиус
+        if thickness is None: thickness = self.thickness[-1]  # если не указана конкретная толщина
+
+        equal_strength = lambda r: (
+                thickness * np.exp(0.5 * self.material.density(temperature) * rotation_frequency ** 2 *
+                                   (radius ** 2 - r ** 2) / tension))
 
         if show:
-            equal_strength_disk = Disk(material=self.material, radius=radius, thickness=thickness)
-            equal_strength_disk.show(title='Equal strength disk')
+            r = linspace(0, self.radius[-1], ndis)
+            equal_strength_disk = Disk(material=self.material, radius=r, thickness=equal_strength(r))
+            equal_strength_disk.show(title=kwargs.pop('title', 'Equal strength disk'))
 
-        return {'radius': radius, 'thickness': thickness}
+        return equal_strength
 
     def frequency_safety_factor(self, rotation_frequency: int | float,
                                 temperature: int | float,
@@ -609,15 +620,21 @@ def test() -> None:
             print(f'holes: {i}, nholes []: {disk.nholes[i]}, rholes: {disk.rholes[i]}, dholes: {disk.dholes[i]}')
             print(f'tension_t in {local_tension}')
 
-        eq_radius, eq_thickness = disk.equal_strength(400 * 10 ** 6, condition["rotation_frequency"],
-                                                      ndis=10, show=False).values()
-        eq_tensions = Disk(material=disk.material, radius=eq_radius, thickness=eq_thickness).tension(**condition,
-                                                                                                     ndis=10, show=True)
+        equal_strength = disk.equal_strength(400 * 10 ** 6, condition["rotation_frequency"], 700, ndis=10, show=False)
+        radius_equal_strength = linspace(0, disk.radius[-1], 10, endpoint=True)
+        thickness_equal_strength = equal_strength(radius_equal_strength)
+        disk_equal_strength = Disk(material=disk.material,
+                                   radius=radius_equal_strength, thickness=thickness_equal_strength)
+        disk_equal_strength.tension(rotation_frequency=condition['rotation_frequency'],
+                                    temperature0=condition['temperature0'],
+                                    pressure=(0, 0), temperature=(700, 700),
+                                    ndis=10, show=True)
+        disk_equal_strength.tension(**condition, ndis=10, show=True)
         print(f'frequency_safety_factor: '
               f'{disk.frequency_safety_factor(condition["rotation_frequency"], temperature=600, pressure=pressure)}')
         print(f'natural_frequencies: {disk.natural_frequencies(-1, 0, 0)}')
         resonance = disk.campbell_diagram(0, 1, 1, condition["rotation_frequency"] * 1.1,
-                                          multiplicity=np.arange(1, 11, 1))
+                                          multiplicity=arange(1, 11, 1))
         print(resonance)
 
 
