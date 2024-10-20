@@ -4,6 +4,7 @@ numpy
 scipy
 matplotlib
 pandas
+pytest
 
 decorators @ git+https://github.com/ParkhomenkoDV/decorators.git@master
 material @ git+https://github.com/ParkhomenkoDV/material.git@master
