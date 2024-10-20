@@ -1,4 +1,4 @@
-from numpy import array, linspace, sort, random
+from numpy import array, linspace, sort, pi, random
 from scipy import interpolate
 import pytest
 
@@ -35,6 +35,21 @@ def radius():
 @pytest.fixture(scope='function')
 def thickness():
     return random.random(20)
+
+
+@pytest.fixture(scope='function')
+def nholes():
+    return random.randint(1, 36, random.randint(0,15))
+
+
+@pytest.fixture(scope='function')
+def rholes(nholes, radius):
+    return random.uniform(min(radius), max(radius), len(nholes))
+
+
+@pytest.fixture(scope='function')
+def dholes(nholes, radius):
+    return [random.uniform(0.00001, 2*pi*radius[i] / nholes[i])  for i in range(len(nholes))]
 
 
 @pytest.fixture(scope='function')
