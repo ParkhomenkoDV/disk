@@ -274,7 +274,7 @@ class Disk:
         assert isinstance(sigma_t, (float, int, np.number)) and isinstance(sigma_r, (float, int, np.number))
 
         b = 2 * pi * radius / n - diameter  # расчет расстояния между краями отверстий по окружности
-        assert 0 < b
+        assert 0 < b, f'circumferential distance must be > 0, but equal {b}'
         if sigma_t != 0:  # ZeroDevisionError
             k = 3 - diameter / b - sigma_r / sigma_t
             sigma_t_hole = float(k * sigma_t)
