@@ -195,9 +195,9 @@ class Disk:
 
         return {'tension_t': sigma_t, 'tension_r': sigma_r}
 
-    def tension(self, rotation_frequency: float | int | np.number, temperature0: int | float | np.number,
-                pressure: tuple | list | np.ndarray, temperature: tuple | list | np.ndarray,
-                ndis: int = 10, show: bool = False) -> dict[str:  np.ndarray]:
+    def tensions(self, rotation_frequency: float | int | np.number, temperature0: int | float | np.number,
+                 pressure: tuple | list | np.ndarray, temperature: tuple | list | np.ndarray,
+                 ndis: int = 10, show: bool = False) -> dict[str:  np.ndarray]:
         """Расчет напряжений в диске"""
 
         assert isinstance(temperature0, (float, int, np.number)) and temperature0 > 0
@@ -613,7 +613,7 @@ def test() -> None:
         print(pd.DataFrame({'radius': disk.radius, 'thickness': disk.thickness}))
         disk.show()
 
-        tensions = disk.tension(**condition, ndis=10, show=True)
+        tensions = disk.tensions(**condition, ndis=10, show=True)
         f_sigma_t = interpolate.interp1d(tensions['radius'], tensions['tension_t'], kind=1)
         f_sigma_r = interpolate.interp1d(tensions['radius'], tensions['tension_r'], kind=1)
         for i in range(len(disk.nholes)):
@@ -629,11 +629,11 @@ def test() -> None:
         thickness_equal_strength = equal_strength(radius_equal_strength)
         disk_equal_strength = Disk(material=disk.material,
                                    radius=radius_equal_strength, thickness=thickness_equal_strength)
-        disk_equal_strength.tension(rotation_frequency=condition['rotation_frequency'],
-                                    temperature0=condition['temperature0'],
-                                    pressure=(0, 0), temperature=(700, 700),
-                                    ndis=10, show=True)
-        disk_equal_strength.tension(**condition, ndis=10, show=True)
+        disk_equal_strength.tensions(rotation_frequency=condition['rotation_frequency'],
+                                     temperature0=condition['temperature0'],
+                                     pressure=(0, 0), temperature=(700, 700),
+                                     ndis=10, show=True)
+        disk_equal_strength.tensions(**condition, ndis=10, show=True)
 
         print(f'frequency_safety_factor: '
               f'{disk.frequency_safety_factor(condition["rotation_frequency"], temperature=600, pressure=pressure)}')
