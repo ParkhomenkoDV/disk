@@ -264,13 +264,23 @@ class Disk:
 
         return result
 
-    def local_tension(self, n: int | np.integer, diameter: int | float | np.number, radius: int | float | np.number,
+    @staticmethod
+    def local_tension(n: int | np.integer, radius: int | float | np.number, diameter: int | float | np.number,
                       sigma_t: float | int | np.number, sigma_r: float | int | np.number) -> tuple[float, float]:
         """Местное напряжение от отверстия"""
-        b = 2 * np.pi * radius / n - diameter  # расчет расстояния между краями отверстий по окружности
-        k = 3 - diameter / b - sigma_r / sigma_t
-        sigma_t_hole = float(k * sigma_t)
-        return sigma_t_hole * 1.1, sigma_t_hole * 1.15
+        assert isinstance(n, (int, np.integer)) and 0 < n
+        assert isinstance(radius, (float, int, np.number)) and 0 <= radius
+        assert isinstance(diameter, (float, int, np.number)) and 0 < diameter
+        assert isinstance(sigma_t, (float, int, np.number)) and isinstance(sigma_r, (float, int, np.number))
+
+        b = 2 * pi * radius / n - diameter  # расчет расстояния между краями отверстий по окружности
+        assert 0 < b
+        if sigma_t != 0:  # ZeroDevisionError
+            k = 3 - diameter / b - sigma_r / sigma_t
+            sigma_t_hole = float(k * sigma_t)
+            return sigma_t_hole * 1.1, sigma_t_hole * 1.15
+        else:
+            return nan, nan
 
     def __show_tension(self, rotation_frequency: float, temperature0: int | float, tensions: dict, **kwargs) -> None:
         """Визуализация напряжений"""
@@ -619,8 +629,8 @@ def test() -> None:
         f_sigma_t = interpolate.interp1d(tensions['radius'], tensions['tension_t'], kind=1)
         f_sigma_r = interpolate.interp1d(tensions['radius'], tensions['tension_r'], kind=1)
         for i in range(len(disk.nholes)):
-            local_tension = disk.local_tension(disk.nholes[i], disk.dholes[i], disk.rholes[i],
-                                               f_sigma_t(disk.rholes[i]), f_sigma_r(disk.rholes[i]))
+            local_tension = disk.local_tension(disk.nholes[i],  disk.rholes[i], disk.dholes[i],
+                                               float(f_sigma_t(disk.rholes[i])), float(f_sigma_r(disk.rholes[i])))
             print(f'holes: {i}, nholes []: {disk.nholes[i]}, rholes: {disk.rholes[i]}, dholes: {disk.dholes[i]}')
             print(f'tension_t in {local_tension}')
 
