@@ -122,15 +122,15 @@ class Disk:
         return self.__dholes
 
     @staticmethod
-    def slicing(point0: tuple, point1: tuple, ndis: int | np.integer) -> tuple[float, float]:
+    def slicing(point0: tuple, point1: tuple, discreteness: int | np.integer) -> tuple[float, float]:
         """Дробление сечений ndis раз"""
         assert isinstance(point0, (tuple, list, np.ndarray)) and isinstance(point1, (tuple, list, np.ndarray))
         assert len(point0) == 2 and len(point1) == 2
-        assert isinstance(ndis, (int, np.integer)) and 1 <= ndis
+        assert isinstance(discreteness, (int, np.integer)) and 1 <= discreteness
         k = (point1[1] - point0[1]) / (point1[0] - point0[0]) if (point1[0] - point0[0]) != 0 else inf
         b = point0[1] - k * point0[0]
-        delta = (point1[0] - point0[0]) / ndis
-        x = point0[0] + delta * np.arange(ndis)
+        delta = (point1[0] - point0[0]) / discreteness
+        x = point0[0] + delta * np.arange(discreteness)
         y = k * x + b
         return x, y
 
@@ -197,7 +197,7 @@ class Disk:
 
     def tensions(self, rotation_frequency: float | int | np.number, temperature0: int | float | np.number,
                  pressure: tuple | list | np.ndarray, temperature: tuple | list | np.ndarray,
-                 ndis: int = 10, show: bool = False) -> dict[str:  np.ndarray]:
+                 discreteness: int = 10, show: bool = False) -> dict[str:  np.ndarray]:
         """Расчет напряжений в диске"""
 
         assert isinstance(temperature0, (float, int, np.number)) and temperature0 > 0
@@ -207,7 +207,7 @@ class Disk:
         assert all(isinstance(el, (int, float, np.number)) for el in temperature)
         assert len(pressure) == 2
         assert len(temperature) == 2 or len(temperature) == len(self.radius)
-        assert isinstance(ndis, (int, np.integer)) and ndis >= 1
+        assert isinstance(discreteness, (int, np.integer)) and discreteness >= 1
         assert isinstance(show, bool)
 
         tetta = (self.material.alpha((temperature[0] + temperature0) / 2) * (temperature[0] - temperature0),
@@ -224,7 +224,8 @@ class Disk:
 
         radius, thickness = np.empty(0), np.empty(0)
         for i in range(len(self.radius) - 1):
-            r, th = self.slicing((self.radius[i], self.thickness[i]), (self.radius[i + 1], self.thickness[i + 1]), ndis)
+            r, th = self.slicing((self.radius[i], self.thickness[i]), (self.radius[i + 1], self.thickness[i + 1]),
+                                 discreteness)
             radius = np.concatenate((radius, r))
             thickness = np.concatenate((thickness, th))
 
@@ -272,7 +273,7 @@ class Disk:
         return sigma_t_hole * 1.1, sigma_t_hole * 1.15
 
     def __show_tension(self, rotation_frequency: float, temperature0: int | float, tensions: dict, **kwargs) -> None:
-
+        """Визуализация напряжений"""
         radius, thickness = tensions.get('radius') * 1_000, tensions.get('thickness') * 1_000  # приведение к [мм]
         for key in tensions:
             if key.startswith('tension'):
@@ -346,6 +347,7 @@ class Disk:
         plt.show()
 
     def show(self, **kwargs) -> None:
+        """Визуализация диска"""
         radius, thickness = self.radius * 1_000, self.thickness * 1_000  # приведение к [мм]
         func = interpolate.interp1d(radius, thickness, kind='linear')
         k = 1.5
@@ -378,7 +380,7 @@ class Disk:
     def equal_strength(self, tension: int | float | np.number,
                        rotation_frequency: int | float | np.number, temperature: int | float | np.number,
                        radius: int | float | np.number = None, thickness: int | float | np.number = None,
-                       ndis: int = 100, show: bool = True, **kwargs):
+                       discreteness: int = 100, show: bool = True, **kwargs):
         """
         Профилирование сплошного, равнопрочного, равномерно нагретого диска без центрального отверстия,
         нагруженного только силами инерции [7]
@@ -388,7 +390,7 @@ class Disk:
         assert isinstance(temperature, (int, float, np.number)) and 0 < temperature
         assert (isinstance(radius, (int, float, np.number)) and 0 <= radius) or radius is None
         assert (isinstance(thickness, (int, float, np.number)) and 0 < thickness) or thickness is None
-        assert isinstance(ndis, (int, np.integer))
+        assert isinstance(discreteness, (int, np.integer))
         assert isinstance(show, bool)
 
         if radius is None: radius = self.radius[-1]  # если не указан конкретный радиус
@@ -399,7 +401,7 @@ class Disk:
                                    (radius ** 2 - r ** 2) / tension))
 
         if show:
-            r = linspace(0, self.radius[-1], ndis)
+            r = linspace(0, self.radius[-1], discreteness)
             equal_strength_disk = Disk(material=self.material, radius=r, thickness=equal_strength(r))
             equal_strength_disk.show(title=kwargs.pop('title', 'Equal strength disk'))
 
@@ -613,7 +615,7 @@ def test() -> None:
         print(pd.DataFrame({'radius': disk.radius, 'thickness': disk.thickness}))
         disk.show()
 
-        tensions = disk.tensions(**condition, ndis=10, show=True)
+        tensions = disk.tensions(**condition, discreteness=10, show=True)
         f_sigma_t = interpolate.interp1d(tensions['radius'], tensions['tension_t'], kind=1)
         f_sigma_r = interpolate.interp1d(tensions['radius'], tensions['tension_r'], kind=1)
         for i in range(len(disk.nholes)):
@@ -624,7 +626,7 @@ def test() -> None:
 
         equal_strength = disk.equal_strength(400 * 10 ** 6,
                                              condition["rotation_frequency"], max(condition['temperature']),
-                                             ndis=10, show=False)
+                                             discreteness=10, show=False)
         radius_equal_strength = linspace(0, disk.radius[-1], 10, endpoint=True)
         thickness_equal_strength = equal_strength(radius_equal_strength)
         disk_equal_strength = Disk(material=disk.material,
@@ -632,8 +634,8 @@ def test() -> None:
         disk_equal_strength.tensions(rotation_frequency=condition['rotation_frequency'],
                                      temperature0=condition['temperature0'],
                                      pressure=(0, 0), temperature=(700, 700),
-                                     ndis=10, show=True)
-        disk_equal_strength.tensions(**condition, ndis=10, show=True)
+                                     discreteness=10, show=True)
+        disk_equal_strength.tensions(**condition, discreteness=10, show=True)
 
         print(f'frequency_safety_factor: '
               f'{disk.frequency_safety_factor(condition["rotation_frequency"], temperature=600, pressure=pressure)}')
