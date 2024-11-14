@@ -1,8 +1,8 @@
 from numpy import pi, random
-
 import pytest
 
-from disk import Disk
+from disk.disk import Disk
+
 
 @pytest.mark.classes
 def test_initialisation_disk(material, radius, thickness, nholes, rholes, dholes):
@@ -11,15 +11,14 @@ def test_initialisation_disk(material, radius, thickness, nholes, rholes, dholes
     assert Disk(material, radius=radius, thickness=thickness)
     assert Disk(material, radius, thickness)
     assert Disk(material, thickness, radius)
-    #assert Disk(material, thickness, radius, nholes, rholes, dholes)
+    # assert Disk(material, thickness, radius, nholes, rholes, dholes)
 
-
-@pytest.mark.xfail
-def test_fail_initialisation_disk(material, radius, thickness):
-    assert Disk()
-    assert Disk(material)
-    assert Disk(radius)
-    assert Disk(material, radius[::-1], thickness)
+    with pytest.raises(Exception):
+        Disk()
+    with pytest.raises(Exception):
+        Disk(material)
+    with pytest.raises(Exception):
+        Disk(radius)
 
 
 def test_disk_tensions(disk, rotation_frequency, temperature0, pressure, temperature, discreteness):

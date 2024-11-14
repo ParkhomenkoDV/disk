@@ -39,7 +39,7 @@ def thickness():
 
 @pytest.fixture(scope='function')
 def nholes():
-    return random.randint(1, 36, random.randint(0,15))
+    return random.randint(1, 36, random.randint(0, 15))
 
 
 @pytest.fixture(scope='function')
@@ -49,7 +49,7 @@ def rholes(nholes, radius):
 
 @pytest.fixture(scope='function')
 def dholes(nholes, radius):
-    return [random.uniform(0.00001, 2*pi*radius[i] / nholes[i])  for i in range(len(nholes))]
+    return [random.uniform(0.00001, 2 * pi * radius[i] / nholes[i]) for i in range(len(nholes))]
 
 
 @pytest.fixture(scope='function')
