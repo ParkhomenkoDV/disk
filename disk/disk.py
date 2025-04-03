@@ -7,7 +7,7 @@ from scipy import interpolate, integrate
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from material import Material
+from substance import Material
 
 # Список использованной литературы
 REFERENCES = MappingProxyType({

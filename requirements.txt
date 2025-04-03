@@ -7,4 +7,4 @@ pandas
 pytest
 
 decorators @ git+https://github.com/ParkhomenkoDV/decorators.git@master
-material @ git+https://github.com/ParkhomenkoDV/material.git@master
+substance @ git+https://github.com/ParkhomenkoDV/substance.git@master
