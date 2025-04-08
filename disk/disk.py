@@ -1,5 +1,3 @@
-from types import MappingProxyType  # неизменяемый словарь
-
 import numpy as np
 import pandas as pd
 from numpy import array, full, zeros, nan, isnan, inf, pi, sqrt, arange, linspace
@@ -10,7 +8,7 @@ import matplotlib.pyplot as plt
 from substance import Material
 
 # Список использованной литературы
-REFERENCES = MappingProxyType({
+REFERENCES = {
     1: '''Елисеев Ю.С., Крымов В.В., Манушин Э.А. и др.
 Конструирование и расчет на прочность турбомашин ГТ и КУ:
 Учебник для студентов вузов / Под общей ред. М.И. Осипова. – М.: МГТУ, 2009''',
@@ -22,7 +20,7 @@ REFERENCES = MappingProxyType({
     5: '''Малинин Н.Н. Прочность турбомашин. – М.: Машиностроние, 1962. – 291 с.''',
     6: '''Колебания / В.С. Чигрин. - Пособие по лабораторному практикуму - Рыбинск: РГАТА, 2005. -20 с.''',
     7: '''Расчет дисков на прочность МАМИ''',
-})
+}
 
 
 class Disk:
@@ -335,8 +333,8 @@ class Disk:
         plt.grid(True)
         plt.axis('equal')
         plt.ylim(ylim)
-        plt.xlabel("Thickness [mm]", fontsize=12)
-        plt.ylabel("Radius [mm]", fontsize=12)
+        plt.xlabel("Thickness", fontsize=12)
+        plt.ylabel("Radius", fontsize=12)
         plt.legend([f'rotation frequency [Hz]: {rotation_frequency:.1f}',
                     f'temperature [K]: {temperature0:.1f}'], fontsize=12)
 
@@ -350,8 +348,8 @@ class Disk:
         plt.legend(fontsize=12)
         plt.grid(True)
         plt.ylim(ylim)
-        plt.xlabel("Tension [MPa]", fontsize=12)
-        plt.ylabel("Radius [mm]", fontsize=12)
+        plt.xlabel("Tension", fontsize=12)
+        plt.ylabel("Radius", fontsize=12)
 
         plt.tight_layout()
         plt.show()
@@ -382,8 +380,8 @@ class Disk:
 
         plt.grid(True)
         plt.axis('equal')
-        plt.xlabel("Thickness [mm]", fontsize=12)
-        plt.ylabel("Radius [mm]", fontsize=12)
+        plt.xlabel(kwargs.get('xlabel', 'Thickness'), fontsize=12)
+        plt.ylabel(kwargs.get('ylabel', 'Radius'), fontsize=12)
         plt.tight_layout()
         plt.show()
 
