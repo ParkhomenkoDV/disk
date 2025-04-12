@@ -335,7 +335,7 @@ class Disk:
         plt.ylim(ylim)
         plt.xlabel("Thickness", fontsize=12)
         plt.ylabel("Radius", fontsize=12)
-        plt.legend([f'rotation frequency [Hz]: {rotation_frequency:.1f}',
+        plt.legend([f'rotation frequency [rad/s]: {rotation_frequency:.1f}',
                     f'temperature [K]: {temperature0:.1f}'], fontsize=12)
 
         fg.add_subplot(gs[0, 1])
@@ -450,20 +450,20 @@ class Disk:
             S = число узловых окружностей
             """
             if radius == 0:  # тип крепления центральное
-                table = [[3.75, 3.42, 5.39, 12.49],
-                         [20.91, 27.56, 34.80, 53.30],
-                         [60.68, nan, nan, nan]]
+                table = ((3.75, 3.42, 5.39, 12.49),
+                         (20.91, 27.56, 34.80, 53.30),
+                         (60.68, nan, nan, nan))
                 return table[S][N] if 0 <= S <= 2 and 0 <= N <= 3 else nan
             elif radius == -1:  # тип крепления периферийное
-                table = [[10.24, 21.25, 33.60, 51],
-                         [39.80, 60.80, 84.60, 111],
-                         [89.00, 120.0, 153.8, 190],
-                         [158.3, 199.0, 243.0, nan]]
+                table = ((10.24, 21.25, 33.60, 51),
+                         (39.80, 60.80, 84.60, 111),
+                         (89.00, 120.0, 153.8, 190),
+                         (158.3, 199.0, 243.0, nan))
                 return table[S][N] if 0 <= S <= 3 and 0 <= N <= 3 else nan
             else:
                 raise Exception('radius in (0, -1)')  # тип крепления
 
-        f = self.material.E(5) * np.mean(self.thickness) ** 2
+        f = self.material.E(5) * np.mean(self.thickness) ** 2  # TODO add temperature
         f /= 12 * (1 - self.material.mu(0) ** 2) * self.material.density(0)
         f = sqrt(f) * alpha(radius, N, S) / (2 * pi * self.radius[-1] ** 2)
         return float(f), '1/s'
@@ -471,7 +471,7 @@ class Disk:
     def campbell_diagram(self, radius: int | np.integer, N: int | np.integer, S: int | np.integer,
                          max_rotation_frequency: int | float | np.number,
                          multiplicity: tuple | list | np.ndarray = arange(1, 11, 1),
-                         **kwargs) -> tuple[list[float], str]:
+                         **kwargs) -> tuple[tuple[float], str]:
         """Диаграмма Кэмпбелла [6]"""
         assert isinstance(max_rotation_frequency, (int, float, np.number))
         assert isinstance(multiplicity, (list, tuple, np.ndarray))
@@ -491,7 +491,7 @@ class Disk:
             else:
                 raise Exception('radius in (0, -1)')  # тип крепления
 
-        rotation_frequency = np.arange(0, max_rotation_frequency + 1, 1) * (2 * pi)  # перевод из рад/c в 1/c=об/c=Гц
+        rotation_frequency = np.arange(0, max_rotation_frequency + 1, 1) / (2 * pi)  # перевод из рад/c в 1/c=об/c=Гц
         # динамическая частота колебаний вращающегося диска
         f = sqrt(self.natural_frequencies(radius, N, S)[0] ** 2 + B(radius, N, S) * rotation_frequency ** 2)
         # волны бегущие по и против вращения диска
@@ -530,7 +530,7 @@ class Disk:
         plt.tight_layout()
         plt.show()
 
-        return sorted(list(map(float, resonance)), reverse=False), '1/s'
+        return tuple(sorted(list(map(float, resonance)), reverse=False)), '1/s'
 
 
 def test() -> None:
