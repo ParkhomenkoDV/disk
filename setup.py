@@ -17,6 +17,6 @@ setup(
     author_email='',
     url='https://github.com/ParkhomenkoDV/disk.git',
     packages=find_packages(),
-    python_requires='>=3.8',
+    python_requires='>=3.11',
     install_requires=install_requires,
 )
