@@ -18,5 +18,6 @@ setup(
     url='https://github.com/ParkhomenkoDV/disk.git',
     packages=find_packages(),
     python_requires='>=3.11',
+    package_dir={"": "src"},
     install_requires=install_requires,
 )
