@@ -9,15 +9,14 @@ with open('requirements.txt', 'rt') as file:
 
 setup(
     name='disk',
-    version=time.strftime('%Y.%m.%d.%H.%M', time.localtime()),
+    version=time.strftime('%Y.%m.%d.%H', time.localtime()),
     description='lib',
     long_description=long_description,
     long_description_content_type='text/markdown',  # если long_description = .md
     author='Daniil Andryushin',
     author_email='',
     url='https://github.com/ParkhomenkoDV/disk.git',
-    packages=find_packages(where="src", exclude=["tests*"]),
+    packages=find_packages(),
     python_requires='>=3.11',
-    package_dir={"": "src"},
     install_requires=install_requires,
 )
