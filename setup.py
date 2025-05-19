@@ -16,7 +16,7 @@ setup(
     author='Daniil Andryushin',
     author_email='',
     url='https://github.com/ParkhomenkoDV/disk.git',
-    packages=find_packages(exclude=["tests*"]),
+    packages=find_packages(where="src", exclude=["tests*"]),
     python_requires='>=3.11',
     package_dir={"": "src"},
     install_requires=install_requires,
