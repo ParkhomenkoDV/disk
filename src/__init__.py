@@ -1,1 +1,1 @@
-from src.disk import REFERENCES, Disk
+from .disk import REFERENCES, Disk
