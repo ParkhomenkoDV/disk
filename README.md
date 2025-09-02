@@ -10,7 +10,7 @@ Library for profiling and strength and resonance calculation of turbomachine dis
 ```bash
 pip install -r requirements.txt
 # or
-pip install --upgrade git+https://github.com/ParkhomenkoDV/substance.git@master
+pip install --upgrade git+https://github.com/ParkhomenkoDV/disk.git@master
 ```
 
 ## Usage
